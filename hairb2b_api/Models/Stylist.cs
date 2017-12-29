@@ -10,20 +10,34 @@ namespace hairb2b_api.Models
     {
         public int id;
         public string name;
-        public string category;
+        public string role;
         public decimal costPerSlot;
         public int rating;
+        public string address;
+        public string city;
+        public string state;
+        public string country;
+        
+        public int telephone;
+        public string description;
         public Stylist_card card;
+        public List<string> skills;
         public List<TimeSlot> BusySlots = new List<TimeSlot>();
+       
 
-        public Stylist(int id, string name, string category, decimal cost,int rating)
+        public Stylist(int id, string name, string role, decimal cost,int rating)
         {
             this.id = id;
             this.name = name;
-            this.category = category;
+            this.role = role;
             this.costPerSlot = cost;
             this.rating = rating;
-            this.card = new Stylist_card(id, name, category, cost, rating);
+            //this.card = new Stylist_card(id, name, category, cost, rating);
+        }
+
+        public Stylist()
+        {
+
         }
 
         public void addBusySlots(int year,int month, int day,char slot) 
@@ -34,6 +48,11 @@ namespace hairb2b_api.Models
         public List<TimeSlot> getBusySlots(int month)
         {
             return this.BusySlots.FindAll(p => p.month == month);
+        }
+
+        public List<TimeSlot> getBusySlots()
+        {
+            return this.BusySlots;
         }
 
         public Stylist_card getCard()
@@ -67,6 +86,7 @@ namespace hairb2b_api.Models
             public string category;
             public decimal costPerSlot;
             public int rating;
+            public List<string> skills;
             public Stylist_card(int id,string name,string category,decimal cost,int rating)
             {
                 this.id = id;
@@ -74,15 +94,21 @@ namespace hairb2b_api.Models
                 this.category = category;
                 this.costPerSlot = cost;
                 this.rating = rating;
+                this.skills = new List<string>();
             }
 
             public Stylist_card(Stylist stylist)
             {
                 this.id = stylist.id;
                 this.name = stylist.name;
-                this.category = stylist.category;
+                this.category = stylist.role;
                 this.costPerSlot = stylist.costPerSlot;
                 this.rating = stylist.rating;
+            }
+
+            public void add_skill(string skill)
+            {
+                this.skills.Add(skill);
             }
         }
     }
