@@ -20,20 +20,7 @@ namespace hairb2b_api.Controllers
 
         public StylistsController()
         {
-            //this.stylists = new List<Stylist>();
-            //this.stylistNames = new List<string>();
-            //this.stylists.Add(new Stylist(1, "Simon", "educator", 30, 8));
-            //this.stylists.Add(new Stylist(2, "Sanath", "stylist", 20, 6));
-            //this.stylists.Add(new Stylist(3, "Joe", "stylist", 25, 6));
-            //this.stylists.Add(new Stylist(4, "Ramani", "educator", 30, 9));
-            //this.stylists.ElementAt(0).addBusySlots(2017, 12, 29, 'm');
-            //this.stylists.ElementAt(0).addBusySlots(2017, 12, 29, 'e');
-            //this.stylists.ElementAt(1).addBusySlots(2017, 12, 30, 'm');
-            //this.stylists.ElementAt(1).addBusySlots(2017, 12, 30, 'e');
-            //foreach(var x in stylists)
-            //{
-            //    stylistNames.Add(x.name);
-            //}
+            
             
             using (SqlConnection conn = new SqlConnection(this.connString))
             {
@@ -53,16 +40,7 @@ namespace hairb2b_api.Controllers
                 }
             }
             
-            //try
-            //{
-            //    connection = new SqlConnection(connString);
-            //    connection.Open();
-            //    Debug.WriteLine("successfully connected to the database");
-            //}
-            //catch(Exception e)
-            //{
-            //    Debug.WriteLine(e);
-            //}
+            
 
         }
 
@@ -70,14 +48,7 @@ namespace hairb2b_api.Controllers
         [HttpGet]
         public IHttpActionResult getBusyDates(int month,int stylistId)
         {
-            //var stylist = stylists.Find(p => p.id == stylistId);
-
-            //    if (stylist == null)
-            //{
-            //    return NotFound();
-
-            //}
-            //return Ok(stylist.getBusySlots(month));
+            
             Stylist st = new Stylist();
             using (SqlConnection conn = new SqlConnection(this.connString))
             {
@@ -106,12 +77,7 @@ namespace hairb2b_api.Controllers
         [HttpGet]
         public IHttpActionResult getDummyStylistCards()
         {
-            //List<Stylist.Stylist_card> cards = new List<Stylist.Stylist_card>();
-            //cards.Add(new Stylist.Stylist_card(this.stylists.ElementAt(0)));
-            //cards.Add(new Stylist.Stylist_card(this.stylists.ElementAt(1)));
-            //cards.Add(new Stylist.Stylist_card(this.stylists.ElementAt(2)));
-            //cards.Add(new Stylist.Stylist_card(this.stylists.ElementAt(3)));
-            //return Ok(cards);
+            
             using (SqlConnection conn = new SqlConnection(this.connString))
             {
                 //need to get id, name, category(role), costperslot and rating
@@ -119,6 +85,9 @@ namespace hairb2b_api.Controllers
                                                       from trnStylist ts , trnJobRole tj, trnChargePerSlot tc 
                                                       where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 ;"
                                                         , conn);
+                SqlCommand command2 = new SqlCommand(@"SELECT ts.id as id,tk.description 
+                                                       from trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk 
+                                                       WHERE ts.id=tsm.stylistId and tsm.skillId=tk.id;",conn);
                 this.stylists = new List<Stylist>();
                 conn.Open();
                 using (SqlDataReader rdr = command.ExecuteReader())
@@ -133,6 +102,17 @@ namespace hairb2b_api.Controllers
                         this.stylists.Add(st);
                     }
                 }
+                using (SqlDataReader rdr = command2.ExecuteReader())
+                {
+                    while (rdr.Read())
+                    {
+                        //int i;
+                        this.stylists.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));
+                        
+
+
+                    }
+                }
             }
             return Ok(this.stylists);
         }
@@ -143,21 +123,7 @@ namespace hairb2b_api.Controllers
             return Ok(this.stylistNames);
         }
 
-        //[HttpGet]
-        //public IHttpActionResult getBasicSearchResults(string name)
-        //{
-        //    if (string.IsNullOrEmpty(name))
-        //    {
-        //        return Ok(stylists);
-        //    }
-        //    else
-        //    {
-        //        var results = stylists.FindAll(p => p.name == name);
-        //        //Debug.WriteLine(string.IsNullOrEmpty(name));
-        //        return Ok(results);
-        //    }
-
-        //}
+        
 
         [HttpGet]
         public IHttpActionResult getBasicSearchResults(string name)
@@ -170,10 +136,11 @@ namespace hairb2b_api.Controllers
                                                       from trnStylist ts , trnJobRole tj, trnChargePerSlot tc 
                                                       where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 and (firstName='"+name+"' or lastName='"+name +"') ;"
                                                         ,conn);
-                Debug.WriteLine(@"SELECT ts.id as id,firstName,lastName,role,charge 
-                                                      from trnStylist ts , trnJobRole tj, trnChargePerSlot tc 
-                                                      where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 and (firstName='" + name + "' or lastName='" + name + "' )");
-                
+                SqlCommand command2 = new SqlCommand(@"SELECT ts.id as id,tk.description 
+                                                       from trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk 
+                                                       WHERE ts.id=tsm.stylistId and tsm.skillId=tk.id and (firstName='" + name + "' or lastName='" + name + "') ;",conn);
+
+               
                 conn.Open();
                 using(SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -187,6 +154,16 @@ namespace hairb2b_api.Controllers
                         stylistList.Add(st);
                     }
                 }
+                using(SqlDataReader rdr = command2.ExecuteReader())
+                {
+                    while(rdr.Read())
+                    {
+                        
+                        stylistList.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));                 
+                        
+
+                    }
+                }
             }
             return Ok(stylistList);
 
@@ -196,41 +173,70 @@ namespace hairb2b_api.Controllers
         [HttpGet]
         public IHttpActionResult getAdvancedSearchResults(string searchBy, string advancedSearchName, int fromDay,int fromMonth,int fromYear, int toDay, int toMonth, int toYear,  int serviceCharge)
         {
-            List<Stylist> results = new List<Stylist>(stylists);
-            if (searchBy == "name")
+            
+            
+            List<Stylist> stylistList = new List<Stylist>();
+            List<int> stylistIds = new List<int>();
+            string searchString = @"Select distinct ts.id as id,firstName,lastName,charge,role 
+                                    FROM trnStylist ts ,trnChargePerSlot tc, trnJobRole tj  
+                                    WHERE tc.stylistId=ts.id and tc.timeSlotId=1 and tj.id=ts.jobRoleId";
+            
+            if (searchBy=="name")
             {
-                results = results.FindAll(p => p.name == advancedSearchName);
+                searchString += " and (firstName='" + advancedSearchName + "' or lastName='" + advancedSearchName + "' )";
             }
-            if (searchBy == "skills")
+            if(searchBy=="skills")
             {
-
+                searchString += @" and ts.id IN(SELECT DISTINCT ts.id 
+                                                FROM trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk
+												WHERE ts.id=tsm.stylistId and tsm.skillId=tk.id and tk.description='" + advancedSearchName + "')";
             }
-            if(fromDay!=0 && toDay!=0)
+            if(fromDay !=0 && toDay!=0)
             {
-                results = results.FindAll(p => checkAvailability(p,fromDay,fromMonth,fromYear,toDay,toMonth,toYear));
+                DateTime from = new DateTime(fromYear, fromMonth, fromDay);
+                DateTime to = new DateTime(toYear, toMonth, toDay);
+                searchString += " and ts.id NOT IN (SELECT DISTINCT ts.id FROM trnStylist ts,trnBusyDates tb WHERE ts.id=tb.stylistId and tb.date>'"+from.Date+"' and tb.date <'"+to.Date+"' )";
             }
-            if(serviceCharge!=0)
+            
+            if(serviceCharge !=0)
             {
-                results = results.FindAll(p => p.costPerSlot <= serviceCharge);
+                searchString += " and charge<=" + serviceCharge;
             }
-            return Ok(results);
-
-        }
-
-        public Boolean checkAvailability(Stylist stylist,int fromDay, int fromMonth, int fromYear, int toDay, int toMonth, int toYear)
-        {            
-            DateTime from = new DateTime(fromYear, fromMonth, fromDay);
-            DateTime to = new DateTime(toYear, toMonth, toDay);
-            foreach(Stylist.TimeSlot i in stylist.BusySlots)
+            searchString += ";";
+            Debug.WriteLine(searchString);
+            using (SqlConnection conn = new SqlConnection(this.connString) )
             {
-                DateTime current = new DateTime(i.year, i.month, i.day);
-                if(DateTime.Compare(current,from)>=0 && DateTime.Compare(current,to)<=0)
+                SqlCommand command = new SqlCommand(searchString, conn);
+                SqlCommand command2 = new SqlCommand(@"SELECT ts.id as id,tk.description as description
+                                                       from trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk 
+                                                       WHERE ts.id=tsm.stylistId and tsm.skillId=tk.id;", conn);
+                conn.Open();
+                using(SqlDataReader rdr= command.ExecuteReader())
                 {
-                    return false;
+                    while(rdr.Read())
+                    {
+                        Stylist st = new Stylist(Convert.ToInt32(rdr["id"]), Convert.ToString(rdr["firstName"]) + " " + Convert.ToString(rdr["lastName"]),Convert.ToString(rdr["role"]),Convert.ToInt32(rdr["charge"]),5);
+                        stylistList.Add(st);
+                        stylistIds.Add(Convert.ToInt32(rdr["id"]));
+                    }
+                }
+                using(SqlDataReader rdr=command2.ExecuteReader())
+                {
+                    while(rdr.Read())
+                    {
+                        int id = Convert.ToInt32(rdr["id"]);
+                        if (stylistIds.Contains(id)) {
+                            stylistList.Find(p => p.id == id).skills.Add(Convert.ToString(rdr["description"]));
+                        }
+                    }
                 }
             }
-            return true;
+            
+            return Ok(stylistList);
+
         }
+
+        
 
         [HttpGet]
         public IHttpActionResult getStylistDetails(int stylistId)
@@ -260,6 +266,23 @@ namespace hairb2b_api.Controllers
                 }
             }
             return Ok(st);
+        }
+
+        [HttpGet]
+        public IHttpActionResult getSkillNames()
+        {
+            List<String> skills = new List<string>();
+            using(SqlConnection conn = new SqlConnection(this.connString))
+            {
+                SqlCommand command = new SqlCommand("select description from trnSkill;",conn);
+                conn.Open();
+                using(SqlDataReader rdr=command.ExecuteReader())
+                {
+                    while(rdr.Read())
+                        skills.Add(Convert.ToString(rdr["description"]));
+                }
+            }
+            return Ok(skills);
         }
 
 

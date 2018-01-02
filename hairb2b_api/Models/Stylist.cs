@@ -21,7 +21,7 @@ namespace hairb2b_api.Models
         public int telephone;
         public string description;
         public Stylist_card card;
-        public List<string> skills;
+        public List<string> skills = new List<string>();
         public List<TimeSlot> BusySlots = new List<TimeSlot>();
        
 
