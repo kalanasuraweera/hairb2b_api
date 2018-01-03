@@ -81,9 +81,9 @@ namespace hairb2b_api.Controllers
             using (SqlConnection conn = new SqlConnection(this.connString))
             {
                 //need to get id, name, category(role), costperslot and rating
-                SqlCommand command = new SqlCommand(@"SELECT ts.id as id,firstName,lastName,role,charge 
-                                                      from trnStylist ts , trnJobRole tj, trnChargePerSlot tc 
-                                                      where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 ;"
+                SqlCommand command = new SqlCommand(@"SELECT ts.id as id,firstName,lastName,role,charge,imagePath 
+                                                      from trnStylist ts LEFT JOIN trnGallery tg ON ts.profileId= tg.profileId, trnJobRole tj, trnChargePerSlot tc
+                                                      where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 and tg.profileId=ts.profileId and tg.picTypeId=1;"
                                                         , conn);
                 SqlCommand command2 = new SqlCommand(@"SELECT ts.id as id,tk.description 
                                                        from trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk 
@@ -97,8 +97,9 @@ namespace hairb2b_api.Controllers
                         Stylist st = new Stylist(Convert.ToInt32(rdr["id"]),
                                 Convert.ToString(rdr["firstName"]) + " " + Convert.ToString(rdr["lastName"]),
                                 Convert.ToString(rdr["role"]),
-                                Convert.ToInt32(rdr["charge"]),
+                                Convert.ToInt32(rdr["charge"]),                                
                                 5);
+                        st.profilePic = Convert.ToString(rdr["imagePath"]);
                         this.stylists.Add(st);
                     }
                 }
@@ -108,9 +109,6 @@ namespace hairb2b_api.Controllers
                     {
                         //int i;
                         this.stylists.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));
-                        
-
-
                     }
                 }
             }
@@ -132,9 +130,9 @@ namespace hairb2b_api.Controllers
             using (SqlConnection conn = new SqlConnection(this.connString))
             {
                 //need to get id, name, category(role), costperslot and rating
-                SqlCommand command = new SqlCommand(@"SELECT ts.id as id,firstName,lastName,role,charge 
-                                                      from trnStylist ts , trnJobRole tj, trnChargePerSlot tc 
-                                                      where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 and (firstName='"+name+"' or lastName='"+name +"') ;"
+                SqlCommand command = new SqlCommand(@"SELECT ts.id as id,firstName,lastName,role,charge,imagePath  
+                                                      from trnStylist ts LEFT JOIN trnGallery tg ON ts.profileId= tg.profileId, trnJobRole tj, trnChargePerSlot tc 
+                                                      where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 and tg.profileId=ts.profileId and tg.picTypeId=1 and (firstName='" + name+"' or lastName='"+name +"') ;"
                                                         ,conn);
                 SqlCommand command2 = new SqlCommand(@"SELECT ts.id as id,tk.description 
                                                        from trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk 
@@ -151,6 +149,7 @@ namespace hairb2b_api.Controllers
                                 Convert.ToString(rdr["role"]),
                                 Convert.ToInt32(rdr["charge"]),
                                 5);
+                        st.profilePic = Convert.ToString(rdr["imagePath"]);
                         stylistList.Add(st);
                     }
                 }
@@ -160,8 +159,6 @@ namespace hairb2b_api.Controllers
                     {
                         
                         stylistList.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));                 
-                        
-
                     }
                 }
             }
@@ -177,9 +174,9 @@ namespace hairb2b_api.Controllers
             
             List<Stylist> stylistList = new List<Stylist>();
             List<int> stylistIds = new List<int>();
-            string searchString = @"Select distinct ts.id as id,firstName,lastName,charge,role 
-                                    FROM trnStylist ts ,trnChargePerSlot tc, trnJobRole tj  
-                                    WHERE tc.stylistId=ts.id and tc.timeSlotId=1 and tj.id=ts.jobRoleId";
+            string searchString = @"Select distinct ts.id as id,firstName,lastName,charge,role,imagePath 
+                                    FROM trnStylist ts LEFT JOIN trnGallery tg ON ts.profileId= tg.profileId,trnChargePerSlot tc, trnJobRole tj  
+                                    WHERE tc.stylistId=ts.id and tc.timeSlotId=1 and tj.id=ts.jobRoleId and tg.profileId=ts.profileId and tg.picTypeId=1";
             
             if (searchBy=="name")
             {
@@ -216,6 +213,7 @@ namespace hairb2b_api.Controllers
                     while(rdr.Read())
                     {
                         Stylist st = new Stylist(Convert.ToInt32(rdr["id"]), Convert.ToString(rdr["firstName"]) + " " + Convert.ToString(rdr["lastName"]),Convert.ToString(rdr["role"]),Convert.ToInt32(rdr["charge"]),5);
+                        st.profilePic = Convert.ToString(rdr["imagePath"]);
                         stylistList.Add(st);
                         stylistIds.Add(Convert.ToInt32(rdr["id"]));
                     }
@@ -245,9 +243,9 @@ namespace hairb2b_api.Controllers
             using (SqlConnection conn = new SqlConnection(this.connString))
             {
                 //need to get stylist details based on the id provided. The details required are name, address,city,state,country,telephone,description,skills
-                SqlCommand command = new SqlCommand(@"select firstName,lastName,addressLine1,addressLine2,city,state,country,telephone,description,charge,role 
-                                                      from trnStylist ts,trnChargePerSlot tc,trnJobRole tj  
-                                                      where ts.id=" + stylistId+ " and ts.id=tc.stylistId and tc.timeSlotId=1 and tj.id=ts.jobRoleId;"
+                SqlCommand command = new SqlCommand(@"select firstName,lastName,addressLine1,addressLine2,city,state,country,telephone,description,charge,role,imagePath 
+                                                      from trnStylist ts LEFT JOIN trnGallery tg ON ts.profileId= tg.profileId,trnChargePerSlot tc,trnJobRole tj  
+                                                      where ts.id=" + stylistId+ " and ts.id=tc.stylistId and tc.timeSlotId=1 and tj.id=ts.jobRoleId and tg.profileId=ts.profileId and tg.picTypeId=1;"
                                                         , conn);
 
                 conn.Open();
@@ -263,6 +261,7 @@ namespace hairb2b_api.Controllers
                     st.description = Convert.ToString(rdr["description"]);
                     st.costPerSlot = Convert.ToInt32(rdr["charge"]);
                     st.role = Convert.ToString(rdr["role"]);
+                    st.profilePic = Convert.ToString(rdr["imagePath"]);
                 }
             }
             return Ok(st);
