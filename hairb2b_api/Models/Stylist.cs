@@ -55,13 +55,7 @@ namespace hairb2b_api.Models
             return this.BusySlots;
         }
 
-        //public Stylist_card getCard()
-        //{
-        //    return this.card;
-        //}
-
-
-        //internal classes required by the Stylist class
+   
         public class TimeSlot
         {
             public int day;
@@ -81,42 +75,3 @@ namespace hairb2b_api.Models
     }
 }
 
-    //    public class Stylist_card
-    //    {
-    //        public int id;
-    //        public string name;
-    //        public string category;
-    //        public decimal costPerSlot;
-    //        public int rating;
-    //        public List<string> skills;
-    //        public Stylist_card(int id,string name,string category,decimal cost,int rating)
-    //        {
-    //            this.id = id;
-    //            this.name = name;
-    //            this.category = category;
-    //            this.costPerSlot = cost;
-    //            this.rating = rating;
-    //            this.skills = new List<string>();
-    //        }
-
-    //        public Stylist_card(Stylist stylist)
-    //        {
-    //            this.id = stylist.id;
-    //            this.name = stylist.name;
-    //            this.category = stylist.role;
-    //            this.costPerSlot = stylist.costPerSlot;
-    //            this.rating = stylist.rating;
-    //        }
-
-    //        public void add_skill(string skill)
-    //        {
-    //            this.skills.Add(skill);
-    //        }
-    //    }
-    //}
-
-   
-
-    
-    
-//}

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -11,22 +12,18 @@ using System.Data.SqlClient;
 
 namespace hairb2b_api.Controllers
 {
+    //this controller handles stylist details
     public class StylistsController : ApiController
     {
-        List<Stylist> stylists;
-        List<string> stylistNames = new List<string>();      
-        private string connString = "Data Source=eyepaxws-51\\eyepaxws51;Initial Catalog=hairb2b;Integrated Security=True";
-
-
+        //List<Stylist> stylists;
+        List<string> stylistNames = new List<string>();   
         public StylistsController()
-        {
-            
-            
-            using (SqlConnection conn = new SqlConnection(this.connString))
+        {           
+            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
+                Debug.WriteLine(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
                 //need to get firstname and lastname of all users and put them in the stylistNames list
-                SqlCommand command = new SqlCommand(@"SELECT firstName,lastName
-                                                      from trnStylist;"
+                SqlCommand command = new SqlCommand("EXEC dbo.stylist_namelist;"
                                                         , conn);
                 
                 conn.Open();
@@ -39,25 +36,18 @@ namespace hairb2b_api.Controllers
                     }
                 }
             }
-            
-            
-
         }
 
-    
+        //get the busy dates for a particular stylist in a given month
         [HttpGet]
         public IHttpActionResult getBusyDates(int month,int stylistId)
-        {
-            
+        {            
             Stylist st = new Stylist();
-            using (SqlConnection conn = new SqlConnection(this.connString))
+            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 //need to add the busy dates to a stylist object
-                SqlCommand command = new SqlCommand(@"SELECT firstName,tb.date as date,tt.slot as slot 
-                                                      from trnStylist ts,trnBusyDates tb,trnTimeSlot tt 
-                                                      WHERE ts.id ="+stylistId + " and ts.id=tb.stylistId and tb.timeSlotId=tt.id;"                                                     
+                SqlCommand command = new SqlCommand("EXEC dbo.stylist_busydates @stylistId =" + stylistId +";"
                                                         , conn);
-
                 conn.Open();
                 using (SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -77,18 +67,13 @@ namespace hairb2b_api.Controllers
         [HttpGet]
         public IHttpActionResult getDummyStylistCards()
         {
-            
-            using (SqlConnection conn = new SqlConnection(this.connString))
+            List<Stylist> stylists = new List<Stylist>();
+            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 //need to get id, name, category(role), costperslot and rating
-                SqlCommand command = new SqlCommand(@"SELECT ts.id as id,firstName,lastName,role,charge,imagePath 
-                                                      from trnStylist ts LEFT JOIN trnGallery tg ON ts.profileId= tg.profileId, trnJobRole tj, trnChargePerSlot tc
-                                                      where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 and tg.profileId=ts.profileId and tg.picTypeId=1;"
+                SqlCommand command = new SqlCommand("EXEC dbo.stylist_cards;"
                                                         , conn);
-                SqlCommand command2 = new SqlCommand(@"SELECT ts.id as id,tk.description 
-                                                       from trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk 
-                                                       WHERE ts.id=tsm.stylistId and tsm.skillId=tk.id;",conn);
-                this.stylists = new List<Stylist>();
+                SqlCommand command2 = new SqlCommand("EXEC dbo.stylist_skills;",conn);                
                 conn.Open();
                 using (SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -100,7 +85,7 @@ namespace hairb2b_api.Controllers
                                 Convert.ToInt32(rdr["charge"]),                                
                                 5);
                         st.profilePic = Convert.ToString(rdr["imagePath"]);
-                        this.stylists.Add(st);
+                        stylists.Add(st);
                     }
                 }
                 using (SqlDataReader rdr = command2.ExecuteReader())
@@ -108,11 +93,11 @@ namespace hairb2b_api.Controllers
                     while (rdr.Read())
                     {
                         //int i;
-                        this.stylists.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));
+                        stylists.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));
                     }
                 }
             }
-            return Ok(this.stylists);
+            return Ok(stylists);
         }
 
         [HttpGet]
@@ -127,18 +112,11 @@ namespace hairb2b_api.Controllers
         public IHttpActionResult getBasicSearchResults(string name)
         {
             List<Stylist> stylistList = new List<Stylist>();
-            using (SqlConnection conn = new SqlConnection(this.connString))
+            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 //need to get id, name, category(role), costperslot and rating
-                SqlCommand command = new SqlCommand(@"SELECT ts.id as id,firstName,lastName,role,charge,imagePath  
-                                                      from trnStylist ts LEFT JOIN trnGallery tg ON ts.profileId= tg.profileId, trnJobRole tj, trnChargePerSlot tc 
-                                                      where ts.jobRoleId = tj.id and ts.id = tc.stylistId and  tc.timeSlotId=1 and tg.profileId=ts.profileId and tg.picTypeId=1 and (firstName='" + name+"' or lastName='"+name +"') ;"
-                                                        ,conn);
-                SqlCommand command2 = new SqlCommand(@"SELECT ts.id as id,tk.description 
-                                                       from trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk 
-                                                       WHERE ts.id=tsm.stylistId and tsm.skillId=tk.id and (firstName='" + name + "' or lastName='" + name + "') ;",conn);
-
-               
+                SqlCommand command = new SqlCommand("EXEC dbo.stylist_cards @requestType='basic',@name='"+name+"';" ,conn);
+                SqlCommand command2 = new SqlCommand("EXEC dbo.stylist_skills @name='"+name+"';",conn);               
                 conn.Open();
                 using(SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -169,45 +147,38 @@ namespace hairb2b_api.Controllers
 
         [HttpGet]
         public IHttpActionResult getAdvancedSearchResults(string searchBy, string advancedSearchName, int fromDay,int fromMonth,int fromYear, int toDay, int toMonth, int toYear,  int serviceCharge)
-        {
-            
-            
+        {           
             List<Stylist> stylistList = new List<Stylist>();
             List<int> stylistIds = new List<int>();
-            string searchString = @"Select distinct ts.id as id,firstName,lastName,charge,role,imagePath 
-                                    FROM trnStylist ts LEFT JOIN trnGallery tg ON ts.profileId= tg.profileId,trnChargePerSlot tc, trnJobRole tj  
-                                    WHERE tc.stylistId=ts.id and tc.timeSlotId=1 and tj.id=ts.jobRoleId and tg.profileId=ts.profileId and tg.picTypeId=1";
+            string searchString = @"EXEC dbo.stylist_cards @requestType='advanced'";
             
             if (searchBy=="name")
             {
-                searchString += " and (firstName='" + advancedSearchName + "' or lastName='" + advancedSearchName + "' )";
+                searchString += ",@advSearchName='"+advancedSearchName+"'";
             }
             if(searchBy=="skills")
             {
-                searchString += @" and ts.id IN(SELECT DISTINCT ts.id 
-                                                FROM trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk
-												WHERE ts.id=tsm.stylistId and tsm.skillId=tk.id and tk.description='" + advancedSearchName + "')";
+                searchString += ",@skillName='"+advancedSearchName+"'";
             }
             if(fromDay !=0 && toDay!=0)
             {
                 DateTime from = new DateTime(fromYear, fromMonth, fromDay);
                 DateTime to = new DateTime(toYear, toMonth, toDay);
-                searchString += " and ts.id NOT IN (SELECT DISTINCT ts.id FROM trnStylist ts,trnBusyDates tb WHERE ts.id=tb.stylistId and tb.date>'"+from.Date+"' and tb.date <'"+to.Date+"' )";
+                searchString += ",@fromDate='"+from+"',@toDate='"+to+"'";
             }
             
             if(serviceCharge !=0)
             {
-                searchString += " and charge<=" + serviceCharge;
+                searchString += ",@serviceCharge=" + serviceCharge;
             }
             searchString += ";";
             Debug.WriteLine(searchString);
-            using (SqlConnection conn = new SqlConnection(this.connString) )
+            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString) )
             {
                 SqlCommand command = new SqlCommand(searchString, conn);
-                SqlCommand command2 = new SqlCommand(@"SELECT ts.id as id,tk.description as description
-                                                       from trnStylist ts,trnStylistSkillMapping tsm, trnSkill tk 
-                                                       WHERE ts.id=tsm.stylistId and tsm.skillId=tk.id;", conn);
+                SqlCommand command2 = new SqlCommand("EXEC dbo.stylist_skills;", conn);
                 conn.Open();
+                Debug.WriteLine(searchString);
                 using(SqlDataReader rdr= command.ExecuteReader())
                 {
                     while(rdr.Read())
@@ -240,14 +211,11 @@ namespace hairb2b_api.Controllers
         public IHttpActionResult getStylistDetails(int stylistId)
         {
             Stylist st = new Stylist();
-            using (SqlConnection conn = new SqlConnection(this.connString))
+            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 //need to get stylist details based on the id provided. The details required are name, address,city,state,country,telephone,description,skills
-                SqlCommand command = new SqlCommand(@"select firstName,lastName,addressLine1,addressLine2,city,state,country,telephone,description,charge,role,imagePath 
-                                                      from trnStylist ts LEFT JOIN trnGallery tg ON ts.profileId= tg.profileId,trnChargePerSlot tc,trnJobRole tj  
-                                                      where ts.id=" + stylistId+ " and ts.id=tc.stylistId and tc.timeSlotId=1 and tj.id=ts.jobRoleId and tg.profileId=ts.profileId and tg.picTypeId=1;"
+                SqlCommand command = new SqlCommand(@"EXEC dbo.stylist_details @stylistId="+stylistId+";"
                                                         , conn);
-
                 conn.Open();
                 using (SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -271,7 +239,7 @@ namespace hairb2b_api.Controllers
         public IHttpActionResult getSkillNames()
         {
             List<String> skills = new List<string>();
-            using(SqlConnection conn = new SqlConnection(this.connString))
+            using(SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 SqlCommand command = new SqlCommand("select description from trnSkill;",conn);
                 conn.Open();
