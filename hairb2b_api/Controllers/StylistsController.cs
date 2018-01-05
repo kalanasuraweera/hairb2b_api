@@ -23,9 +23,9 @@ namespace hairb2b_api.Controllers
             {
                 Debug.WriteLine(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
                 //need to get firstname and lastname of all users and put them in the stylistNames list
-                SqlCommand command = new SqlCommand("EXEC dbo.stylist_namelist;"
+                SqlCommand command = new SqlCommand("dbo.stylist_namelist"
                                                         , conn);
-                
+                command.CommandType = System.Data.CommandType.StoredProcedure;
                 conn.Open();
                 using (SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -46,8 +46,10 @@ namespace hairb2b_api.Controllers
             using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 //need to add the busy dates to a stylist object
-                SqlCommand command = new SqlCommand("EXEC dbo.stylist_busydates @stylistId =" + stylistId +";"
+                SqlCommand command = new SqlCommand("dbo.stylist_busydates"
                                                         , conn);
+                command.CommandType = System.Data.CommandType.StoredProcedure;
+                command.Parameters.Add(new SqlParameter("@stylistId", stylistId));
                 conn.Open();
                 using (SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -71,9 +73,11 @@ namespace hairb2b_api.Controllers
             using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 //need to get id, name, category(role), costperslot and rating
-                SqlCommand command = new SqlCommand("EXEC dbo.stylist_cards;"
+                SqlCommand command = new SqlCommand("dbo.stylist_cards"
                                                         , conn);
-                SqlCommand command2 = new SqlCommand("EXEC dbo.stylist_skills;",conn);                
+                command.CommandType = System.Data.CommandType.StoredProcedure;
+                SqlCommand command2 = new SqlCommand("dbo.stylist_skills",conn);
+                command2.CommandType = System.Data.CommandType.StoredProcedure;
                 conn.Open();
                 using (SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -92,7 +96,7 @@ namespace hairb2b_api.Controllers
                 {
                     while (rdr.Read())
                     {
-                        //int i;
+                        
                         stylists.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));
                     }
                 }
@@ -115,10 +119,17 @@ namespace hairb2b_api.Controllers
             using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 //need to get id, name, category(role), costperslot and rating
-                SqlCommand command = new SqlCommand("EXEC dbo.stylist_cards @requestType='basic',@name='"+name+"';" ,conn);
-                SqlCommand command2 = new SqlCommand("EXEC dbo.stylist_skills @name='"+name+"';",conn);               
+                SqlCommand command = new SqlCommand("dbo.stylist_cards" ,conn);
+                command.CommandType = System.Data.CommandType.StoredProcedure;
+                command.Parameters.Add(new SqlParameter("@name",name));
+                command.Parameters.Add(new SqlParameter("@requestType", "basic"));
+
+                SqlCommand command2 = new SqlCommand("dbo.stylist_skills", conn);
+                command2.CommandType = System.Data.CommandType.StoredProcedure;
+                command2.Parameters.Add(new SqlParameter("@name", name));
+
                 conn.Open();
-                using(SqlDataReader rdr = command.ExecuteReader())
+                using (SqlDataReader rdr = command.ExecuteReader())
                 {
                     while(rdr.Read())
                     {
@@ -131,12 +142,12 @@ namespace hairb2b_api.Controllers
                         stylistList.Add(st);
                     }
                 }
-                using(SqlDataReader rdr = command2.ExecuteReader())
+                using (SqlDataReader rdr = command2.ExecuteReader())
                 {
-                    while(rdr.Read())
+                    while (rdr.Read())
                     {
-                        
-                        stylistList.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));                 
+
+                        stylistList.Find(p => p.id == Convert.ToInt32(rdr["id"])).skills.Add(Convert.ToString(rdr["description"]));
                     }
                 }
             }
@@ -149,36 +160,36 @@ namespace hairb2b_api.Controllers
         public IHttpActionResult getAdvancedSearchResults(string searchBy, string advancedSearchName, int fromDay,int fromMonth,int fromYear, int toDay, int toMonth, int toYear,  int serviceCharge)
         {           
             List<Stylist> stylistList = new List<Stylist>();
-            List<int> stylistIds = new List<int>();
-            string searchString = @"EXEC dbo.stylist_cards @requestType='advanced'";
+            List<int> stylistIds = new List<int>();       
             
-            if (searchBy=="name")
-            {
-                searchString += ",@advSearchName='"+advancedSearchName+"'";
-            }
-            if(searchBy=="skills")
-            {
-                searchString += ",@skillName='"+advancedSearchName+"'";
-            }
-            if(fromDay !=0 && toDay!=0)
-            {
-                DateTime from = new DateTime(fromYear, fromMonth, fromDay);
-                DateTime to = new DateTime(toYear, toMonth, toDay);
-                searchString += ",@fromDate='"+from+"',@toDate='"+to+"'";
-            }
-            
-            if(serviceCharge !=0)
-            {
-                searchString += ",@serviceCharge=" + serviceCharge;
-            }
-            searchString += ";";
-            Debug.WriteLine(searchString);
             using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString) )
             {
-                SqlCommand command = new SqlCommand(searchString, conn);
-                SqlCommand command2 = new SqlCommand("EXEC dbo.stylist_skills;", conn);
+                
+                SqlCommand command = new SqlCommand("dbo.stylist_cards", conn);
+                command.CommandType = System.Data.CommandType.StoredProcedure;
+                command.Parameters.Add(new SqlParameter("@requestType", "advanced"));
+                if(searchBy=="name")
+                {
+                    command.Parameters.Add(new SqlParameter("@advSearchName", advancedSearchName));
+                }
+                if(searchBy=="skills")
+                {
+                    command.Parameters.Add(new SqlParameter("@skillName", advancedSearchName));
+                }
+                if(fromDay !=0 && toDay!=0)
+                {
+                    DateTime from = new DateTime(fromYear, fromMonth, fromDay);
+                    DateTime to = new DateTime(toYear, toMonth, toDay);
+                    command.Parameters.Add(new SqlParameter("@fromDate", from));
+                    command.Parameters.Add(new SqlParameter("@toDate", to));
+                }
+                if(serviceCharge !=0)
+                {
+                    command.Parameters.Add(new SqlParameter("@serviceCharge", serviceCharge));
+                }
+                SqlCommand command2 = new SqlCommand("dbo.stylist_skills", conn);
+                command2.CommandType = System.Data.CommandType.StoredProcedure;
                 conn.Open();
-                Debug.WriteLine(searchString);
                 using(SqlDataReader rdr= command.ExecuteReader())
                 {
                     while(rdr.Read())
@@ -214,8 +225,10 @@ namespace hairb2b_api.Controllers
             using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
                 //need to get stylist details based on the id provided. The details required are name, address,city,state,country,telephone,description,skills
-                SqlCommand command = new SqlCommand(@"EXEC dbo.stylist_details @stylistId="+stylistId+";"
+                SqlCommand command = new SqlCommand("dbo.stylist_details"
                                                         , conn);
+                command.CommandType = System.Data.CommandType.StoredProcedure;
+                command.Parameters.Add(new SqlParameter("@stylistId", stylistId));
                 conn.Open();
                 using (SqlDataReader rdr = command.ExecuteReader())
                 {
@@ -241,7 +254,8 @@ namespace hairb2b_api.Controllers
             List<String> skills = new List<string>();
             using(SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
             {
-                SqlCommand command = new SqlCommand("select description from trnSkill;",conn);
+                SqlCommand command = new SqlCommand("dbo.skill_description",conn);
+                command.CommandType = System.Data.CommandType.StoredProcedure;
                 conn.Open();
                 using(SqlDataReader rdr=command.ExecuteReader())
                 {
